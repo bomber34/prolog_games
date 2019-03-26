@@ -82,20 +82,16 @@ play(FIELD, TURN, NEXT_TURN):-
 	
 get_player_input(FIELD, computer, CELL):-
 	nb_current(diff, random),
-	repeat,
-	random_member(CELL, FIELD),
-	var(CELL),
+	random_cell(FIELD,CELL),
 	sleep(0.3),
 	!.
 
 %TODO write a good bot
+get_player_input(FIELD, computer, CELL):-
+	good_bot_move(FIELD,CELL).
 	
 get_player_input(FIELD, Player, CELL):-
 	format('~w: choose a field~n',[Player]),
-	prompt(_,''),
-	%get_single_char(N),
-	%char_code(CHAR,N),
-	%atom_number(CHAR, NUMBER),
 	make_selection(NUMBER, 9),
 	convert_numpad(NUMBER, NUMPAD),
 	nth1(NUMPAD,FIELD,CELL),
@@ -165,3 +161,71 @@ check_diagonal([A,_,_,_,B,_,_,_,C]):-
 check_diagonal([_,_,A,_,B,_,C,_,_]):-
 	are_nonvars([A,B,C]),
 	are_equal([A,B,C]),!.
+	
+%BOT AI
+good_bot_move(FIELD, CELL):-
+	fill_middle(FIELD, CELL),!;
+	partition_field(FIELD, LIST_OF_THREE),
+	(get_good_cell(LIST_OF_THREE, CELL),!; next_best_cell(FIELD, CELL),!; random_cell(FIELD,CELL),!).
+	
+partition_field([A,B,C,D,E,F,G,H,I],[
+	[A,B,C],[D,E,F],[G,H,I],
+	[A,D,G],[B,E,H],[C,F,I],
+	[A,E,I],[C,E,G]]).
+	
+fill_middle([_,_,_,_,E|_],E):-
+	var(E).
+
+get_good_cell([L|Ls],Cell):-
+	almost_equal(L,Cell),!;
+	get_good_cell(Ls,Cell).
+	
+almost_equal(L,Cell):-
+	count_nonvars(L,2),
+	partially_equal(L),
+	get_var(L,Cell).
+
+partially_equal([A,B,C]):-
+	var(A), B = C,!;
+	var(B), A = C,!;
+	var(C), A = B,!.
+
+count_nonvars([],0).
+count_nonvars([H|T],Count):-
+	count_nonvars(T,C1),
+	(nonvar(H) -> Count is C1 + 1; Count = C1).
+
+get_var([Cell|_],Cell):-
+	var(Cell).
+get_var([H|T],Cell):-
+	nonvar(H), get_var(T,Cell).
+	
+next_best_cell(FIELD, CELL):-
+	calculate_turn(FIELD, TURN),
+	which_player(TURN, _, MARK),
+	find_pair(FIELD,MARK,CELL).
+
+find_pair(FIELD,MARK,CELL):-
+	partition_field(FIELD, LIST),
+	tuple_pair(LIST,MARK,CELL).
+
+tuple_pair([],_,_):- fail.
+tuple_pair([L|T],MARK,CELL):-
+	has_free_pair(L,MARK,CELL),!;
+	tuple_pair(T,MARK,CELL).
+	
+has_free_pair([A,B,C],MARK,CELL):-
+	var(A), nonvar(B), B = MARK, A = CELL,!;
+	var(B), nonvar(C), C = MARK, B = CELL,!;
+	var(C), nonvar(B), B = MARK, C = CELL,!.
+
+calculate_turn([],0).
+calculate_turn([H|T],Count):-
+	calculate_turn(T,C1),
+	(nonvar(H) -> Count is C1+1,!; Count = C1).
+	
+random_cell(FIELD,CELL):-
+	repeat,
+	random_member(CELL, FIELD),
+	var(CELL),
+	!.
