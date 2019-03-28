@@ -7,10 +7,51 @@ info:-
 	
 :- info.
 
-test:-
+test1:-
 	findall(Num, between(1,42,Num),L),
 	get_cols(L,Cols),
 	writeCols(Cols).
+	
+exampleField(L,1):-
+	L = [
+		x,_,_,_,_,_,_,
+		_,x,_,_,_,_,_,
+		_,_,x,_,_,_,_,
+		_,_,_,x,_,_,_,
+		_,_,_,_,_,_,_,
+		_,_,_,_,_,_,_].
+		
+exampleField(L,2):-
+	L = [
+		_,x,_,_,_,_,_,
+		_,_,x,_,_,_,_,
+		_,_,_,x,_,_,_,
+		_,_,_,_,x,_,_,
+		_,_,_,_,_,_,_,
+		_,_,_,_,_,_,_].
+
+exampleField(L,3):-
+	L = [
+		_,_,_,_,_,_,_,
+		x,_,_,_,_,_,_,
+		_,x,_,_,_,_,_,
+		_,_,x,_,_,_,_,
+		_,_,_,x,_,_,_,
+		_,_,_,_,_,_,_].
+		
+exampleField(L,4):-
+	L = [
+		_,_,_,_,_,_,_,
+		_,_,_,_,_,_,_,
+		_,_,_,x,_,_,_,
+		_,_,_,_,x,_,_,
+		_,_,_,_,_,x,_,
+		_,_,_,_,_,_,x].
+		
+test2:-
+	exampleField(L,_),
+	display_field(L),
+	check_diagonals(L).
 	
 writeCols([]).
 writeCols([H|T]):-
@@ -33,8 +74,26 @@ get_cols(Field, Cols):-
 get_cols_([[],[],[],[],[],[]],[]).
 get_cols_([[A|As],[B|Bs],[C|Cs],[D|Ds],[E|Es],[F|Fs]],[[A,B,C,D,E,F]|Cols]):-
 	get_cols_([As,Bs,Cs,Ds,Es,Fs],Cols).
-
 	
+check_diagonals(Field):-
+	get_cols(Field, Cols),
+	check_right_diagonals(Cols).
+	
+check_right_diagonals([[A,_,_,_|_],[B,_,_|_],[C,_|_],[D|_]|_]):-
+	nonvar(A), nonvar(B), nonvar(C), nonvar(D),
+	A = B, A = C, A = D, !.
+	
+check_right_diagonals([[A,_,_,_|_],[_,B,_,_|_],[_,_,C,_|_],[_,_,_,D|_]|_]):-
+	nonvar(A), nonvar(B), nonvar(C), nonvar(D),
+	A = B, A = C, A = D, !.
+
+check_right_diagonals([[_|AT],[_|BT],[_|CT],[_|DT]|_]):-
+	L = [AT,BT,CT,DT],
+	check_right_diagonals(L).
+	
+check_right_diagonals([_|T]):-
+	check_right_diagonals(T).
+
 %Field display 
 display_field(L):-
 	get_rows(L, Rows),
