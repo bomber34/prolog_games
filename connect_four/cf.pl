@@ -48,6 +48,15 @@ exampleField(L,4):-
 		_,_,_,_,_,x,_,
 		_,_,_,_,_,_,x].
 		
+exampleField(L,5):-
+	L = [
+		_,_,_,_,_,_,_,
+		_,_,_,_,_,_,_,
+		_,_,_,o,_,_,_,
+		_,_,o,_,_,_,_,
+		_,o,_,_,_,_,_,
+		o,_,_,_,_,_,_].
+		
 test2:-
 	exampleField(L,_),
 	display_field(L),
@@ -77,11 +86,12 @@ get_cols_([[A|As],[B|Bs],[C|Cs],[D|Ds],[E|Es],[F|Fs]],[[A,B,C,D,E,F]|Cols]):-
 	
 check_diagonals(Field):-
 	get_cols(Field, Cols),
-	check_right_diagonals(Cols).
+		(check_right_diagonals(Cols),!;
+		reverse(Cols,RevCols), check_right_diagonals(RevCols)),!.
 	
-check_right_diagonals([[A,_,_,_|_],[B,_,_|_],[C,_|_],[D|_]|_]):-
-	nonvar(A), nonvar(B), nonvar(C), nonvar(D),
-	A = B, A = C, A = D, !.
+%check_right_diagonals([[A,_,_,_|_],[B,_,_|_],[C,_|_],[D|_]|_]):-
+%	nonvar(A), nonvar(B), nonvar(C), nonvar(D),
+%	A = B, A = C, A = D, !.
 	
 check_right_diagonals([[A,_,_,_|_],[_,B,_,_|_],[_,_,C,_|_],[_,_,_,D|_]|_]):-
 	nonvar(A), nonvar(B), nonvar(C), nonvar(D),
