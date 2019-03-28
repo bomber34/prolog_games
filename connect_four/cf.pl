@@ -71,6 +71,9 @@ game:-
 	length(L,42),
 	display_field(L).
 	
+%play
+	
+
 %get information about field
 get_rows([],[]).
 get_rows([A,B,C,D,E,F,G|T],[[A,B,C,D,E,F,G]|T2]):-
@@ -83,6 +86,29 @@ get_cols(Field, Cols):-
 get_cols_([[],[],[],[],[],[]],[]).
 get_cols_([[A|As],[B|Bs],[C|Cs],[D|Ds],[E|Es],[F|Fs]],[[A,B,C,D,E,F]|Cols]):-
 	get_cols_([As,Bs,Cs,Ds,Es,Fs],Cols).
+
+%check win condition
+check_field(Field):-
+	check_row(Field),!;
+	check_col(Field),!;
+	check_diagonals(Field).
+
+check_row(Field):-
+	get_rows(Field,Rows),
+	check_row_(Rows).
+
+check_row_([[A,B,C,D|_]|_]):-
+		nonvar(A), nonvar(B), nonvar(C), nonvar(D),
+		A=B,A=C,A=D,!.
+check_row_([[_|T]|T2]):-
+	check_row_([T|T2]).
+
+check_row_([_|T]):-
+	check_row_(T).
+	
+check_col(Field):-
+	get_cols(Field,Cols),
+	check_row_(Cols).
 	
 check_diagonals(Field):-
 	get_cols(Field, Cols),
