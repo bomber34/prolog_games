@@ -69,11 +69,56 @@ writeCols([H|T]):-
 
 game:-
 	length(L,42),
-	display_field(L).
-	
+	display_field(L),
+	play(L, 0),!.
+
+get_player(Turn, player_1, x):- Turn mod 2 =:= 0.
+get_player(Turn, player_2, o):- Turn mod 2 =:= 1.	
+
 %play
+play(Field, Turn):-
+	Turn >= 42, format('draw'),!;
+	get_player(Turn, Player, Mark),
+	get_cols(Field, Cols),
+	pick_col(Cols, Cell),
+	Next_Turn is Turn+1,
+	Cell = Mark,
+	display_field(Field),
+	(check_field(Field) -> format('~w wins',[Player]),!;
+	play(Field, Next_Turn)).
+	
+pick_col(Cols, Cell):-
+	writeln('pick a free column'),
+	repeat,
+	make_selection(Number, 7),
+	get_free_spot(Cols, Number, Cell),
+	!.
+	
+get_free_spot(Cols, Number, Cell):-
+	nth1(Number, Cols, Col),
+	get_free_spot_(Col, Cell).
+	
+get_free_spot_([A],Cell):-
+	var(A), A = Cell,!.
+
+get_free_spot_([A,B|_], Cell):-
+	var(A), nonvar(B), A = Cell,!.
+
+get_free_spot_([_|T],Cell):-
+	get_free_spot_(T,Cell).
 	
 
+make_selection(NUMBER, LIMIT):-
+	repeat,
+	prompt(_,''),
+	get_single_char(C),
+	char_code(KEY, C),
+	atom_number(KEY, NUMBER),
+	NUMBER >= 1,
+	NUMBER =< LIMIT,
+	!.
+	
+	
 %get information about field
 get_rows([],[]).
 get_rows([A,B,C,D,E,F,G|T],[[A,B,C,D,E,F,G]|T2]):-
