@@ -80,15 +80,15 @@ play(Field, Turn):-
 	Turn >= 42, format('draw'),!;
 	get_player(Turn, Player, Mark),
 	get_cols(Field, Cols),
-	pick_col(Cols, Cell),
+	pick_col(Cols, Cell, Mark),
 	Next_Turn is Turn+1,
 	Cell = Mark,
 	display_field(Field),
 	(check_field(Field) -> format('~w wins',[Player]),!;
 	play(Field, Next_Turn)).
 	
-pick_col(Cols, Cell):-
-	writeln('pick a free column'),
+pick_col(Cols, Cell, Mark):-
+	format('~w: pick a free column~n',[Mark]),
 	repeat,
 	make_selection(Number, 7),
 	get_free_spot(Cols, Number, Cell),
@@ -179,8 +179,12 @@ check_right_diagonals([_|T]):-
 display_field(L):-
 	get_rows(L, Rows),
 	display_line,
-	display_rows(Rows).
+	display_rows(Rows),
+	display_nums.
 
+display_nums:-
+	writeln(' 1 2 3 4 5 6 7 '),nl.
+	
 display_rows([]).
 display_rows([Row|Rows]):-
 		display_row(Row),
