@@ -4,16 +4,32 @@ game(1,L,3,4):-
 		2,2,3,4,
 		3,3,1,1
 		].
+		
+game(2,L,11,22):-
+	L = [
+	1,3,4,4,4,3,4,2,4,3,4,1,4,1,2,4,3,2,4,4,4,2,
+	4,1,2,1,1,3,3,2,2,2,3,4,4,4,3,1,3,3,4,3,4,2,
+	3,1,4,2,4,1,1,4,3,3,4,1,3,1,2,1,2,4,1,1,3,3,
+	3,3,2,2,2,1,3,2,1,2,2,1,3,3,2,2,2,1,1,2,1,1,
+	4,3,4,3,2,4,4,2,2,3,4,4,4,4,3,2,4,1,2,2,4,4,
+	2,3,1,4,4,3,3,1,2,2,4,2,4,3,4,3,1,4,4,3,2,1,
+	3,4,2,1,3,3,1,1,3,1,1,4,2,1,1,3,1,4,3,3,1,3,
+	1,2,1,2,4,2,1,2,3,1,1,3,2,2,1,1,2,3,1,2,2,3,
+	4,4,1,1,4,3,3,1,4,4,3,4,3,4,3,2,4,4,2,2,4,3,
+	1,3,3,4,2,4,1,1,1,3,3,2,2,4,1,4,1,3,1,3,2,2,
+	2,2,3,2,3,4,2,2,2,2,1,1,3,2,1,1,1,2,3,4,4,1
+	].
 
 start(Game):-
 	game(Game,State,Height,Width),
-	display_map(State,Height,Width),
-	solve(State,Height,Width).
+	%display_map(State,Height,Width),
+	get_time(StartTime),
+	solve(State,Height,Width,StartTime, [State]).
 
-solve(State,_,_):-
-	all_cleared(State),!.
+solve(State,Height,Width,StartTime, Steps):-
+	(all_cleared(State); get_time(EndTime), Diff is EndTime - StartTime, Diff > 300.0), display_all_maps(Steps,Height,Width), !.
 	
-solve(State,Height,Width):-
+solve(State,Height,Width,StartTime, Steps):-
 	Size is Height * Width,
 	length(WorkState,Size),
 	get_coordinates(State,Height, Width,X,Y),
@@ -21,8 +37,9 @@ solve(State,Height,Width):-
 	remove_fields(State,Height, Width, X,Y,WorkState),
 	update_neighbours(State,Size,Width,1,WorkState),
 	finish_update(WorkState,NextState),
-	display_map(NextState,Height,Width),
-	solve(NextState,Height,Width).
+	%display_map(NextState,Height,Width),
+	append(Steps, [NextState], MoreSteps),
+	solve(NextState,Height,Width, StartTime,MoreSteps).
 	
 all_cleared([]).
 all_cleared([o|T]):- all_cleared(T).	
@@ -30,6 +47,10 @@ all_cleared([o|T]):- all_cleared(T).
 finish_update([],[]).
 finish_update([x|T],[o|T2]):- finish_update(T,T2).
 finish_update([H|T],[H|T2]):- H \= x, finish_update(T,T2).	
+
+display_all_maps([],_,_).
+display_all_maps([Map|T],Height,Width):-
+	display_map(Map,Height,Width), display_all_maps(T,Height,Width).
 
 display_map(Map,Height,Width):-
 	display_map(Map,Width,Height,Width).
