@@ -52,7 +52,7 @@ solve(State,Height,Width,StartTime, Steps):-
 	Size is Height * Width,
 	length(WorkState,Size),
 	get_coordinates(State,Height, Width,X,Y),
-	has_valid_position(State,Width,Height,X,Y),
+	%has_valid_position(State,Width,Height,X,Y),
 	remove_fields(State,Height, Width, X,Y,WorkState),
 	update_neighbours(State,Size,Width,1,WorkState),
 	finish_update(WorkState,NextState),
@@ -60,13 +60,17 @@ solve(State,Height,Width,StartTime, Steps):-
 	append(Steps, [WorkState], MoreSteps),
 	solve(NextState,Height,Width, StartTime,MoreSteps).
 
+%List is all cleared if all elements consist of o
 all_cleared([]).
 all_cleared([o|T]):- all_cleared(T).
 
+%accept state transform by updating all currently removed values x to previously removed values o
+%otherwise copy value of working state
 finish_update([],[]).
 finish_update([x|T],[o|T2]):- finish_update(T,T2).
 finish_update([H|T],[H|T2]):- H \= x, finish_update(T,T2).
 
+%show order of removal
 display_all_maps([],_,_, _).
 display_all_maps([Map|T],Height,Width, 0):-
 	get_single_char(_),!,
@@ -88,6 +92,7 @@ display_map([Field|T],Width,H,W):-
 	NextW is W-1,
 	display_map(T,Width,H,NextW).
 
+%go through list, if position features a neighbour whose value is x, add 1 to value
 update_neighbours(_, Size,_, Position, _):- Position > Size, !.
 update_neighbours(State, Size,Width,Position,NextState):-
 	nth1(Position,NextState, Spot),
@@ -111,6 +116,8 @@ update_neighbours(State, Size,Width,Position,NextState):-
 update_val(Val,Spot):-
 		Val < 5,
 		Spot = Val.
+
+%should be generalised but honestly, the game is hardcoded for 4 single values
 update_val(5,Spot):-
 	Spot = 1.
 
@@ -136,17 +143,21 @@ neighbour_got_removed(Size,Pos,NextState):-
 %true if this position does not resemble value west and north of it
 is_not_prev(_,1,_).
 is_not_prev(State,Position,Width):-
-	Position > Width,
-	WPos is Position - 1,
-	NPos is Position - Width,
-	nth1(Position,State,Val),
-	not(nth1(WPos,State,Val)),
-	not(nth1(NPos,State,Val)),!.
-is_not_prev(State,Position,_):-
 	Position > 1,
 	WPos is Position - 1,
 	nth1(Position,State,Val),
-	not(nth1(WPos,State,Val)),!.
+	not(nth1(WPos,State,Val)),
+	(Position > Width ->
+		NPos is Position - Width,
+		not(nth1(NPos,State,Val))
+		; true
+	).
+	
+%is_not_prev(State,Position,_):-
+%	Position > 1,
+%	WPos is Position - 1,
+%	nth1(Position,State,Val),
+%	not(nth1(WPos,State,Val)),!.
 
 get_coordinates(State,Height, Width, X, Y):-
 	between(1,Width,X),
@@ -156,6 +167,7 @@ get_coordinates(State,Height, Width, X, Y):-
 	nth1(Position, State, Value),
 	Value \= x,
 	Value \= o,
+	%check if city-distance neighbour has same value
 	(
 		X < Width, XEast is X + 1, NextPos is ((Y-1) * Width) + XEast, nth1(NextPos, State, Value);
 		X > 1, XWest is X - 1, NextPos is ((Y-1) * Width) + XWest, nth1(NextPos, State, Value);
@@ -187,8 +199,9 @@ remove_neighbour(State, Height, Width, Value,X,Y,NextState):-
 	nth1(Position, NextState, FreeSpot),
 	var(FreeSpot),
 	FreeSpot = x,
-	remove_neighbours(State, Height, Width, Value,X,Y,NextState).
+	remove_neighbours(State, Height, Width, Value,X,Y,NextState),!.
 
+%if previous state transformations fail, accept change
 remove_neighbour(_, _, _, _,_,_,_):- true.
 
 has_valid_position(State,Width,Height,X,Y):-
