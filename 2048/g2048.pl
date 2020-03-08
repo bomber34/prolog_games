@@ -1,8 +1,14 @@
+welcome_msg :-
+    format('Type start. to play the game~n').
+    
+:- welcome_msg, format('~n~n~n~n').
+
 % 2048 is a simple game where a field of numbers can be moved in 4 directions
 % the goal is to form a tile with the value 2048
 
 % Starts the game
 start:-
+    nl,
     create_field(Map, 4),
     play(Map, 4).
 
@@ -61,7 +67,8 @@ play(Map, Size):-
     win_condition(Map) -> writeln('You have won');
     \+ valid_state(Map, Size) -> writeln('You have lost');
     get_move(Move),
-    format("You have moved ~w~n", [Move]),
+    format("You have chosen: ~w~n~n", [Move]),
+    (Move = "quit" -> abort; true),
     apply_move_to_map(Map, Size, Move, TransfMap),
     (TransfMap = Map -> 
         play(TransfMap, Size);
@@ -145,13 +152,14 @@ get_rows(Map, Size, [Row|T]):-
 
 %Asks user for input and waits until input was valid
 get_move(Move):-
-    writeln("Press an arrow key to move the board"),
+    format("Press an arrow key to move the board or press ESC to quit~n~n"),
     repeat,
     get_single_char(K),
     get_key(K, Move),nl, !.
 
 %Key codes for the arrow keys
 get_key(-1, "fail"). %if user tries to close program during input
+get_key(27, "quit"). %escape key to quit game
 get_key(14, "down").
 get_key(16, "up").
 get_key(2, "left").
