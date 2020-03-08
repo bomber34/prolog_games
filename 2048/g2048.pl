@@ -1,6 +1,11 @@
 % 2048 is a simple game where a field of numbers can be moved in 4 directions
 % the goal is to form a tile with the value 2048
 
+% Starts the game
+start:-
+    create_field(Map, 4),
+    play(Map, 4).
+
 % Create start field of size N^2, fill 2 tiles with start val 2 and rest with 0
 create_field(Map, Size):-
     MapSize is Size*Size,
@@ -25,16 +30,17 @@ fill_rest([M|T]):-
     log(M)/log(2) =:= floor(log(M) / log(2)),
     fill_rest(T).
 
+% state is valid if there exists a single 0, two pairs can be filled up which are next to each other
 valid_state(Map, LineSize):-
     (
     member(0,Map); 
-    nextto(N,N,Map); 
-    transpose_list(Map, LineSize, TMap), nextto(N,N,TMap)
+    get_rows(Map, LineSize, Rows), member(Row, Rows), nextto(N,N,Row);  
+    transpose_list(Map, LineSize, TMap), get_rows(TMap, LineSize, Rows), member(Row, Rows), nextto(N,N,Row)
     ),!.
     
+% transposes a list as if it is a matrix
 transpose_list(Map, LineSize, TransposedMap):-
-    transpose_list_(Map,0, LineSize, TransposedMap).
-    
+    transpose_list_(Map,0, LineSize, TransposedMap).  
 transpose_list_(_, Pos, LineSize, []):-
     Pos >= LineSize * LineSize, !.
 transpose_list_(Map,Pos, LineSize, [H|T]):-
@@ -48,28 +54,32 @@ transpose_list_(Map,Pos, LineSize, [H|T]):-
 %4 5 6 7 | 
 %8 9 A B |
 %C D E F |
-
-% Starts the game
-start:-
-    create_field(Map, 4),
-    draw_map(Map, 4),
-    play(Map, 4).
  
+% Play the game until the end
 play(Map, Size):-
-    member(2048, Map) -> draw_map(Map, Size), writeln('You have won');
+    draw_map(Map, Size),
+    win_condition(Map) -> writeln('You have won');
     \+ valid_state(Map, Size) -> writeln('You have lost');
     get_move(Move),
-    format("You have moved ~w", [Move]),
+    format("You have moved ~w~n", [Move]),
     apply_move_to_map(Map, Size, Move, TransfMap),
-    play(TransfMap, Size).
+    (TransfMap = Map -> 
+        play(TransfMap, Size);
+        add_random_tile(TransfMap, NextMap),
+        play(NextMap, Size)
+    ).
 
-%Asks user for input and waits until input was valid
-get_move(Move):-
-    writeln("Press an arrow key to move the board"),
-    repeat,
-    get_single_char(K),
-    get_key(K, Move), !.
+win_condition(Map):-
+    member(2048, Map).
 
+add_random_tile(Map, NewMap):-
+    findall(Index, nth1(Index, Map, 0), Indices),
+    random_member(RandomIndex, Indices),
+    nth1(RandomIndex, Map, 0, Rest), %swap two elements
+    random_member(RandomVal, [2,4]),
+    nth1(RandomIndex,NewMap,RandomVal,Rest). 
+
+%Apply move to all tiles, add two pairs together
 apply_move_to_map(Map, Size, "up", NewMap):-
     transpose_list(Map, Size, TMap),
     apply_move_to_map(TMap, Size, "left", TNewMap),
@@ -90,6 +100,7 @@ apply_move_to_map(Map, Size, "left", NewMap):-
     move_rows(RowMap, MovedRowMaps),
     flatten(MovedRowMaps, NewMap).
     
+% helper function, move needs to be applied only to single rows
 move_rows([],[]):- !.
 move_rows([Row|Rows],[MovedRow|T]):-
     length(Row, Len),
@@ -104,6 +115,7 @@ move_rows([Row|Rows],[MovedRow|T]):-
         append(MovedRow_, Rest, MovedRow)
     ).
 
+% helper function, apply movement to single row
 move_row([],[]):- !.
 move_row([A], [A]):- !.
 move_row([0,0|T], T2):-
@@ -124,11 +136,19 @@ move_row([A,A|T], [B|T2]):-
     B is A+A,
     move_row(T,T2),!.
    
+% Helper function turns map of size N^2 to list of lists of size N
 get_rows([],_,[]):- !.
 get_rows(Map, Size, [Row|T]):-
     length(Row,Size),
     append(Row, Rows, Map),
     get_rows(Rows, Size, T).
+
+%Asks user for input and waits until input was valid
+get_move(Move):-
+    writeln("Press an arrow key to move the board"),
+    repeat,
+    get_single_char(K),
+    get_key(K, Move),nl, !.
 
 %Key codes for the arrow keys
 get_key(-1, "fail"). %if user tries to close program during input
@@ -141,11 +161,11 @@ get_key(6, "right").
 draw_map(Map,Size):-
     draw_map_(Map, Size, Size).
 
-draw_map_([], 0,_):- format('~n~n'),!.
+draw_map_([], 0,_):- format('~n~n~n'),!.
 draw_map_(Map,0,Size):-
-    nl,
+    format('~n~n'),
     draw_map_(Map, Size, Size),!.
 draw_map_([N|T],S,Size):-
-    format('~a ',[N]),
+    format('~a \t',[N]),
     succ(S1,S),
     draw_map_(T,S1,Size).

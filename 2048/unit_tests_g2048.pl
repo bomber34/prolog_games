@@ -111,6 +111,31 @@ test(map_movement):-
         ].
 :- end_tests(map_movement).
 
+
+:- begin_tests(win_state).
+   
+test(win_state):-   
+    Map = 
+    [
+        0, 0, 0, 0,
+        0, 2, 4, 8, 
+        16, 32, 64, 128, 
+        256, 512, 1024, 2048
+    ],
+    win_condition(Map).
+
+test(win_state):-   
+    Map = 
+    [
+        0, 0, 0, 0,
+        0, 2, 4, 8, 
+        16, 32, 64, 128, 
+        256, 256, 1024, 1024
+    ],
+    apply_move_to_map(Map, 4, "right", NewMap),
+    win_condition(NewMap).
+    
+:- end_tests(win_state).
 %L = [0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f],length(L,M),S is floor(sqrt(M)), draw_map(L,S), transpose_list(L, S, TL), draw_map(TL, S), 
 % transpose_list(TL, S, TTL),draw_map(TTL, S).
 
