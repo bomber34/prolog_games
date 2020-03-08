@@ -76,7 +76,7 @@ add_random_tile(Map, NewMap):-
     findall(Index, nth1(Index, Map, 0), Indices),
     random_member(RandomIndex, Indices),
     nth1(RandomIndex, Map, 0, Rest), %swap two elements
-    random_member(RandomVal, [2,4]),
+    random_member(RandomVal, [2,2,2,2,2,2,2,2,2,4]), %10 percent chance that 4 is selected
     nth1(RandomIndex,NewMap,RandomVal,Rest). 
 
 %Apply move to all tiles, add two pairs together
