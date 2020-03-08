@@ -73,11 +73,18 @@ get_move(Move):-
 apply_move_to_map(Map, Size, "up", NewMap):-
     transpose_list(Map, Size, TMap),
     apply_move_to_map(TMap, Size, "left", TNewMap),
-    transpose_list(TNewMap, Size, NewMap).
+    transpose_list(TNewMap, Size, NewMap),!.
+    
 apply_move_to_map(Map, Size, "down", NewMap):-
     transpose_list(Map, Size, TMap),
     apply_move_to_map(TMap, Size, "right", TNewMap),
-    transpose_list(TNewMap, Size, NewMap).
+    transpose_list(TNewMap, Size, NewMap),!.
+    
+apply_move_to_map(Map, Size, "right", NewMap):-
+    reverse(Map,RevMap),
+    apply_move_to_map(RevMap, Size, "left", RNewMap),
+    reverse(RNewMap, NewMap), !.
+    
 apply_move_to_map(Map, Size, "left", NewMap):-
     get_rows(Map, Size, RowMap),
     move_rows(RowMap, MovedRowMaps),
@@ -134,7 +141,7 @@ get_key(6, "right").
 draw_map(Map,Size):-
     draw_map_(Map, Size, Size).
 
-draw_map_([], 0,_):- nl,!.
+draw_map_([], 0,_):- format('~n~n'),!.
 draw_map_(Map,0,Size):-
     nl,
     draw_map_(Map, Size, Size),!.
