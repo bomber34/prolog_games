@@ -1,4 +1,5 @@
 :- consult('g2048.pl').
+:- cls.
 
 :- begin_tests(row_movement).
 test(move_rows):-
@@ -179,6 +180,30 @@ test(transpose):-
      transpose_list(Map, 4, TMap),
      transpose_list(TMap, 4, Map).
 :- end_tests(transpose).
+
+:- begin_tests(score_update).
+
+test(score_update):-
+    Map = 
+    [0,0,0,0,
+    0,0,0,0,
+    2,0,0,2,
+    0,0,0,0],
+    apply_move_to_map(Map, 4, "right", NewMap),
+    get_score_update(Map, NewMap, Score),
+    assertion(Score =:= 4).
+
+test(score_update):-
+    Map = 
+    [0,0,0,0,
+    0,0,0,0,
+    2,0,0,2,
+    0,0,0,0],
+    apply_move_to_map(Map, 4, "up", NewMap),
+    get_score_update(Map, NewMap, Score),
+    assertion(Score =:= 0).
+
+:- end_tests(score_update).
 
 %Run all when file is opened in prolog 
 :- run_tests.

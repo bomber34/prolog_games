@@ -1,6 +1,6 @@
 cls :- write('\e[H\e[2J').
 welcome_msg :-
-    format('Type start. to play the game~n').
+    format('Type start. to play on a default 4x4 map~nType start(N) with X being an integer >1 to play on a NxN map.').
     
 :- cls, welcome_msg, format('~n~n~n~n').
 
@@ -13,11 +13,14 @@ start:-
 
 % Starts the game with a given size
 start(Size):-
+    integer(Size),
+    Size > 1,
     cls,
-    nl,
     create_field(Map, Size),
+    display_score(0),
+    format('Use the arrow keys to move the field or press ESC to quit ~n~n'),
     draw_map(Map, Size),
-    play(Map, Size).
+    play(Map, Size, 0).
 
 % Create start field of size N^2, fill 2 tiles with start val 2 and rest with 0
 create_field(Map, Size):-
@@ -65,24 +68,39 @@ transpose_list_(Map,Pos, LineSize, [H|T]):-
     transpose_list_(Map, NPos, LineSize, T).
 
 % Play the game until the end
-play(Map, Size):-
+play(Map, Size, Score):-
     win_condition(Map) -> writeln('You have won');
     \+ valid_state(Map, Size) -> writeln('You have lost');
     get_move(Move),
     (Move = "quit" -> abort; true),
     apply_move_to_map(Map, Size, Move, TransfMap),
     (TransfMap = Map -> 
-        play(TransfMap, Size);
-        format("You have chosen: ~w~n~n", [Move]),
+        play(TransfMap, Size, Score);
+        cls,
+        update_score(Map, TransfMap, Score, NewScore),
+        display_score(NewScore),
+        format("Your last move was: ~w~n~n", [Move]),
         add_random_tile(TransfMap, NextMap),
         draw_map(NextMap, Size),
-        play(NextMap, Size)
+        format("Press an arrow key to move the board or press ESC to quit~n~n"),
+        play(NextMap, Size, NewScore)
     ).
 
 % game is won, when a 2048 tile exists
 win_condition(Map):-
     member(2048, Map).
 
+%Update current score with new MapState
+update_score(MapState, NewMapState, OldScore, Score):-
+    get_score_update(MapState, NewMapState, Update),
+    Score is OldScore + Update.
+
+get_score_update(OldState, NewState, Score):-
+    foldl([O,N,C, Score] >> 
+            ((N > 0, O>0) -> Score is C + (N - O)*2; Score is C),
+        OldState, NewState,0, Score).
+
+%After a successful move, a random 0 tile gets replaced by either 2 or 4
 add_random_tile(Map, NewMap):-
     findall(Index, nth1(Index, Map, 0), Indices),
     random_member(RandomIndex, Indices),
@@ -156,9 +174,9 @@ get_rows(Map, Size, [Row|T]):-
 
 %Asks user for input and waits until input was valid
 get_move(Move):-
-    format("Press an arrow key to move the board or press ESC to quit~n~n"),
     repeat,
     get_single_char(K),
+    write('\r'),
     get_key(K, Move),nl, !.
 
 %Key codes for the arrow keys
@@ -182,11 +200,17 @@ draw_map_([N|T],S,Size):-
     format('~s~a',[Padding, N]),
     succ(S1,S),
     draw_map_(T,S1,Size).
+  
+%Show current score on screen  
+display_score(Score):-
+    get_padding(Score, Padding),
+    format('Score:~s~a~n',[Padding,Score]).
     
 % Depending of num length, get padding
 get_padding(N, Padding):-
-    member(N, [0,2,4,8]) -> Padding = "     ";
-    member(N, [16, 32, 64]) -> Padding = "    ";
-    member(N, [128, 256, 512]) -> Padding = "   ";
-    member(N, [1024, 2048]) -> Padding = "  ";
-    Padding = " ". %This should never be reached normally
+    between(0,9,N) -> Padding = "     ";
+    between(10,99,N) -> Padding = "    ";
+    between(100,999,N) -> Padding = "   ";
+    between(1000,9999,N) -> Padding = "  ";
+    between(10000,99999,N) -> Padding = " ";
+    Padding = "".
