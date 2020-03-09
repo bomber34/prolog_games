@@ -202,6 +202,16 @@ test(score_update):-
     apply_move_to_map(Map, 4, "up", NewMap),
     get_score_update(Map, NewMap, Score),
     assertion(Score =:= 0).
+    
+test(score_update):-
+    Map = 
+    [0,0,0,0,
+    2,2,2,2,
+    128,128,128,128,
+    64,256,512,1024],
+    apply_move_to_map(Map, 4, "up", NewMap),
+    get_score_update(Map, NewMap, Score),
+    assertion(Score =:= 0).
 
 :- end_tests(score_update).
 

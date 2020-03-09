@@ -1,6 +1,6 @@
 cls :- write('\e[H\e[2J').
 welcome_msg :-
-    format('Type start. to play on a default 4x4 map~nType start(N) with X being an integer >1 to play on a NxN map.').
+    format('Type start. to play on a default 4x4 map~nType start(N) with X being an integer >3 to play on a NxN map.').
     
 :- cls, welcome_msg, format('~n~n~n~n').
 
@@ -14,7 +14,7 @@ start:-
 % Starts the game with a given size
 start(Size):-
     integer(Size),
-    Size > 1,
+    Size > 3,
     cls,
     create_field(Map, Size),
     display_score(0),
@@ -95,10 +95,13 @@ update_score(MapState, NewMapState, OldScore, Score):-
     get_score_update(MapState, NewMapState, Update),
     Score is OldScore + Update.
 
-get_score_update(OldState, NewState, Score):-
-    foldl([O,N,C, Score] >> 
-            ((N > 0, O>0) -> Score is C + (N - O)*2; Score is C),
-        OldState, NewState,0, Score).
+% Score is the sum of the subtraction between List 1 and List 2
+get_score_update([], NewState, Score):-
+    sum_list(NewState, Score),!.
+get_score_update([H|T], NewState, Score):-
+    select(H,NewState, NextState) ->
+    get_score_update(T, NextState, Score);
+    get_score_update(T, NewState, Score).
 
 %After a successful move, a random 0 tile gets replaced by either 2 or 4
 add_random_tile(Map, NewMap):-
@@ -176,7 +179,7 @@ get_rows(Map, Size, [Row|T]):-
 get_move(Move):-
     repeat,
     get_single_char(K),
-    write('\r'),
+    write('\r\b'),
     get_key(K, Move),nl, !.
 
 %Key codes for the arrow keys
@@ -208,9 +211,6 @@ display_score(Score):-
     
 % Depending of num length, get padding
 get_padding(N, Padding):-
-    between(0,9,N) -> Padding = "     ";
-    between(10,99,N) -> Padding = "    ";
-    between(100,999,N) -> Padding = "   ";
-    between(1000,9999,N) -> Padding = "  ";
-    between(10000,99999,N) -> Padding = " ";
-    Padding = "".
+    WhiteSpace = "          ",
+    string_length(N, Length),
+    sub_string(WhiteSpace, Length,_,0,Padding).
