@@ -1,16 +1,23 @@
+cls :- write('\e[H\e[2J').
 welcome_msg :-
     format('Type start. to play the game~n').
     
-:- welcome_msg, format('~n~n~n~n').
+:- cls, welcome_msg, format('~n~n~n~n').
 
 % 2048 is a simple game where a field of numbers can be moved in 4 directions
 % the goal is to form a tile with the value 2048
 
-% Starts the game
+%default start the game
 start:-
+    start(4).
+
+% Starts the game with a given size
+start(Size):-
+    cls,
     nl,
-    create_field(Map, 4),
-    play(Map, 4).
+    create_field(Map, Size),
+    draw_map(Map, Size),
+    play(Map, Size).
 
 % Create start field of size N^2, fill 2 tiles with start val 2 and rest with 0
 create_field(Map, Size):-
@@ -27,6 +34,7 @@ create_field(Map, Size):-
     nth1(M, Map, 2),
     fill_rest(Map),!.
     
+% Fill the free spaces with zeros
 fill_rest([]).
 fill_rest([0|T]):-
     fill_rest(T),!.
@@ -56,26 +64,22 @@ transpose_list_(Map,Pos, LineSize, [H|T]):-
     succ(Pos, NPos),
     transpose_list_(Map, NPos, LineSize, T).
 
-%0 1 2 3 | 0 4 8 C
-%4 5 6 7 | 
-%8 9 A B |
-%C D E F |
- 
 % Play the game until the end
 play(Map, Size):-
-    draw_map(Map, Size),
     win_condition(Map) -> writeln('You have won');
     \+ valid_state(Map, Size) -> writeln('You have lost');
     get_move(Move),
-    format("You have chosen: ~w~n~n", [Move]),
     (Move = "quit" -> abort; true),
     apply_move_to_map(Map, Size, Move, TransfMap),
     (TransfMap = Map -> 
         play(TransfMap, Size);
+        format("You have chosen: ~w~n~n", [Move]),
         add_random_tile(TransfMap, NextMap),
+        draw_map(NextMap, Size),
         play(NextMap, Size)
     ).
 
+% game is won, when a 2048 tile exists
 win_condition(Map):-
     member(2048, Map).
 
@@ -174,6 +178,15 @@ draw_map_(Map,0,Size):-
     format('~n~n'),
     draw_map_(Map, Size, Size),!.
 draw_map_([N|T],S,Size):-
-    format('~a \t',[N]),
+    get_padding(N, Padding),
+    format('~s~a',[Padding, N]),
     succ(S1,S),
     draw_map_(T,S1,Size).
+    
+% Depending of num length, get padding
+get_padding(N, Padding):-
+    member(N, [0,2,4,8]) -> Padding = "     ";
+    member(N, [16, 32, 64]) -> Padding = "    ";
+    member(N, [128, 256, 512]) -> Padding = "   ";
+    member(N, [1024, 2048]) -> Padding = "  ";
+    Padding = " ". %This should never be reached normally

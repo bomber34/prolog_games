@@ -136,8 +136,49 @@ test(win_state):-
     win_condition(NewMap).
     
 :- end_tests(win_state).
-%L = [0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f],length(L,M),S is floor(sqrt(M)), draw_map(L,S), transpose_list(L, S, TL), draw_map(TL, S), 
-% transpose_list(TL, S, TTL),draw_map(TTL, S).
+
+:- begin_tests(lose_state).
+test(lose_state):-
+    Map = 
+    [2, 4, 8, 16,
+    32, 64, 128, 256,
+    64, 32, 8, 16,
+    2, 4, 256, 32],
+    \+ valid_state(Map, 4).
+    
+% edge cases with borders
+test(lose_state):-
+    Map = 
+    [64, 4, 8, 16,
+    16, 64, 128, 256,
+    256, 32, 8, 64,
+    64, 4, 256, 32],
+    \+ valid_state(Map, 4).
+:- end_tests(lose_state).
+
+:- begin_tests(transpose).
+test(transpose):-
+    Map = 
+    [0, 1, 2, 3,
+     4, 5, 6, 7,
+     8, 9, a, b,
+     c, d, e ,f],
+     transpose_list(Map, 4, TMap),
+     TMap = 
+     [0, 4, 8, c,
+      1, 5, 9, d,
+      2, 6, a, e,
+      3, 7, b, f].
+      
+test(transpose):-
+    Map = 
+    [0, 1, 2, 3,
+     4, 5, 6, 7,
+     8, 9, a, b,
+     c, d, e ,f],
+     transpose_list(Map, 4, TMap),
+     transpose_list(TMap, 4, Map).
+:- end_tests(transpose).
 
 %Run all when file is opened in prolog 
 :- run_tests.
