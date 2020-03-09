@@ -14,7 +14,8 @@ start:-
 % Starts the game with a given size
 start(Size):-
     integer(Size),
-    Size > 3,
+    (Size < 4 -> format('Map is too small~n'),abort; true),
+    (Size > 12 -> format('Map is too huge~n'),abort; true),
     cls,
     create_field(Map, Size),
     display_score(0),
@@ -213,4 +214,4 @@ display_score(Score):-
 get_padding(N, Padding):-
     WhiteSpace = "          ",
     string_length(N, Length),
-    sub_string(WhiteSpace, Length,_,0,Padding).
+    sub_string(WhiteSpace, Length,_,0,Padding) -> true; Padding = "". %safety condition if score gets too huge
