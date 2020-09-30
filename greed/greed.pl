@@ -6,7 +6,8 @@ game:-
     width(W), height(H),
     create_field(H, W, Field, Cursor),
     print_field(Field),
-    once(turn_start(Field, Cursor)).
+    once(turn_start(Field, Cursor)),
+    abort.
 
 %%%%%%%%%%%% Init %%%%%%%%%%%% 
 create_field(Height, Width, Field, cursor(X,Y)):-
@@ -33,8 +34,8 @@ dismember_field(Field, FieldRows, RowList):-
 
 %%%%%%%%%%%% Logic %%%%%%%%%%%% 
 turn_start(Field, Cursor):-
-    update_screen(Field),
     possible_moves(Field, Cursor, PossibleMoves),
+    update_screen(Field, Cursor, PossibleMoves),
     (PossibleMoves == [] -> 
         game_over; % TODO: End game message
         turn(Field, Cursor, PossibleMoves)).
@@ -46,7 +47,7 @@ turn(Field, Cursor, PossibleMoves):-
     member(Direction, PossibleMoves),
     get_number(Field, Cursor, Direction, Move),
     go_direction(Field, Cursor, Direction, Move, NewCursor),
-    once(turn_start(Field, NewCursor)).
+    turn_start(Field, NewCursor).
 
 continue_game(quit):- cls, welcome_msg, abort.
 continue_game(_).
@@ -58,6 +59,7 @@ get_number(Field, cursor(X, Y), vec(VecX, VecY), Value):-
     arg(X1, Row, Value),
     number(Value).
 
+% get a list of valid directions
 possible_moves(Field, Cursor, PossibleMoves):-
     once(possible_moves_(Field, Cursor, [vec(-1,-1), vec(0, -1), vec(1, -1), vec(-1, 0), vec(1, 0), vec(-1, 1), vec(0,1), vec(1, 1)], PossibleMoves)).
 
@@ -78,35 +80,42 @@ is_in_boundary(cursor(X,Y), vec(VecX, VecY), Moves):-
     between(1, W, PosX),
     between(1, H, PosY).
 
-check_direction(_, _, _, 0).
-check_direction(Field, cursor(X,Y), vec(VecX, VecY), Move0):-
+% direction is valid if there are no ' '-fields on the given direction
+check_direction(Field, cursor(X,Y), _, 0):-
+    arg(Y, Field, Row),
+    arg(X, Row, Value),
+    number(Value).
+check_direction(Field, cursor(X,Y), Vec, Move0):-
     Move0 > 0,
     arg(Y, Field, Row),
     arg(X, Row, Value),
     once((number(Value); Value == @)),
     succ(Move1, Move0),
-    X1 is X + VecX,
-    Y1 is Y + VecY,
-    check_direction(Field, cursor(X1, Y1),  vec(VecX, VecY), Move1).
+    update_cursor(cursor(X,Y), Vec, NextCursor),
+    check_direction(Field, NextCursor, Vec, Move1).
 
+% difference to check direction: replaces number fields with ' '
 go_direction(Field, Cursor, _, 0, Cursor):-
     Cursor = cursor(X, Y),
     arg(Y, Field, Row),
     setarg(X, Row, @).
-go_direction(Field, cursor(X,Y), vec(VecX, VecY), Move0, NewCursor):-
+go_direction(Field, cursor(X,Y), Vec, Move0, NewCursor):-
     Move0 > 0,
     arg(Y, Field, Row),
     setarg(X, Row, ' '),
     succ(Move1, Move0),
-    X1 is X + VecX,
-    Y1 is Y + VecY,
-    go_direction(Field, cursor(X1, Y1), vec(VecX, VecY), Move1, NewCursor).
+    update_cursor(cursor(X,Y), Vec, NextCursor),
+    go_direction(Field, NextCursor, Vec, Move1, NewCursor).
 
+update_cursor(cursor(X,Y), vec(VecX, VecY), cursor(X1, Y1)):-
+    X1 is X + VecX,
+    Y1 is Y + VecY.
+
+% score is the number of empty spaces in the field
 get_score(Field, Score):-
     dismember_field(Field, _, Rows),
     count_spaces(Rows, 0, Score).
 
-% score is the number of empty spaces in the field
 count_spaces([], Score, Score).
 count_spaces([Row|T], Acc, Score):-
     count_spaces_(Row, 0, RowScore),
@@ -124,15 +133,47 @@ count_spaces_([Elem|T], Acc, RowScore):-
 %%%%%%%%%%%% Visuals %%%%%%%%%%%%
 cls :- write('\e[H\e[2J').
 
-update_screen(Field):-
+update_screen(Field, Cursor, PossibleMoves):-
     cls,
-    print_field(Field),
+    duplicate_term(Field, FieldCopy),
+    colorize_number(FieldCopy, Cursor, PossibleMoves),
+    print_field(FieldCopy),
     print_score(Field).
+
+colorize_number(_, _, []).
+colorize_number(FieldCopy, Cursor, [Vec | T]):-
+    get_number(FieldCopy, Cursor, Vec, Move),
+    succ(Move1, Move),
+    update_cursor(Cursor, Vec, NewCursor),
+    colorize_number(FieldCopy, NewCursor, Vec, Move1),
+    colorize_number(FieldCopy, Cursor, T).
+
+colorize_number(FieldCopy, Cursor, _, 0):-
+    colorize_number(FieldCopy, Cursor).
+colorize_number(FieldCopy, Cursor, Vec, Move):-
+    colorize_number(FieldCopy, Cursor),
+    succ(Mv, Move),
+    update_cursor(Cursor, Vec, NewCursor),
+    colorize_number(FieldCopy, NewCursor, Vec, Mv).
+
+colorize_number(FieldCopy, cursor(X,Y)):-
+    arg(Y, FieldCopy, Row),
+    arg(X, Row, Value),
+    format(string(S), "\u001b[42m~w\u001b[0m", [Value]),
+    setarg(X, Row, S).
 
 print_field(Field):-
     dismember_field(Field, _, RowList),
-    % TODO: colorize @
-    maplist(writeln, RowList), nl.
+    once(color_token(RowList, EnhancedRowList)),
+    maplist(writeln, EnhancedRowList), nl.
+
+color_token([], []).
+color_token([Row|T], [ColorRow|T]):-
+    member(@, Row),
+    select(@, Row, "\u001b[40m@\u001b[0m", ColorRow).
+color_token([Row|T], [Row|T1]):-
+    \+ member(@,Row),
+    color_token(T,T1).
 
 print_score(Field):-
     get_score(Field, Score),
@@ -157,7 +198,7 @@ welcome_msg:-
                         "Start the game by typing 'game.' into the query!",
                         ""
                     ]).
-game_over:- format("Game Over.~nType 'reset.' to read the welcome message again or 'game.' to restart the game").
+game_over:- format("Game Over.~nType 'reset.' to read the welcome message again or 'game.' to restart the game!~n~n").
 reset:- cls, welcome_msg.
 :- set_prolog_flag(verbose, silent), reset.
 
@@ -165,6 +206,7 @@ reset:- cls, welcome_msg.
 %%%%%%%%%%% Controls %%%%%%%%%%%% 
 get_direction(Direction):-
     repeat,
+    write("\r\u001b[2KMove "),
     get_single_char(InputCode),
         (InputCode == -1 -> Direction = quit;
         char_code(Input, InputCode),
